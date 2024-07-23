@@ -10,7 +10,7 @@ internal class DeleteProductCommandHandler(IDocumentSession session, ILogger<Del
         logger.LogInformation("DeleteProductCommandHandler.Handle called with {@command}", command);
 
 
-        session.Delete(command.Id);
+        session.Delete<Product>(command.Id);
 
         await session.SaveChangesAsync(cancellationToken);
 
