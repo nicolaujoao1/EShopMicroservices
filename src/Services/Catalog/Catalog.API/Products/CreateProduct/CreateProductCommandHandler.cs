@@ -14,20 +14,12 @@ public class CreateProductCommandValidator : AbstractValidator<CreateProductComm
     }
 }
 
-internal class UpdateProductCommandHandler
-    (IDocumentSession session, ILogger<UpdateProductCommandHandler> logger, IValidator<CreateProductCommand> validator) : ICommandHandler<CreateProductCommand, CreateProductResult>
+internal class CreateProductCommandHandler
+    (IDocumentSession session, ILogger<CreateProductCommandHandler> logger) : ICommandHandler<CreateProductCommand, CreateProductResult>
 {
     public async Task<CreateProductResult> Handle(CreateProductCommand command, CancellationToken cancellationToken)
     {
-
-        var result = await validator.ValidateAsync(command, cancellationToken);
-
-        var errors = result.Errors.Select(x => x.ErrorMessage).ToList();
-
-        if (errors.Any())
-        {
-            throw new ValidationException(errors.FirstOrDefault());
-        }
+        logger.LogInformation("UpdateProductCommandHandler.Handle called with {@command}", command);
 
         var product = new Product
         {
@@ -41,8 +33,6 @@ internal class UpdateProductCommandHandler
         session.Store(product);
 
         await session.SaveChangesAsync(cancellationToken);
-
-        logger.LogInformation("UpdateProductCommandHandler.Handle called with {@command}", command);
 
         return new CreateProductResult(product.Id);
     }
