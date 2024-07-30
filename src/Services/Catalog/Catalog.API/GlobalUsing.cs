@@ -8,3 +8,4 @@ global using Catalog.API.Exceptions;
 global using FluentValidation;
 global using BuildingBlocks.Behaviors;
 global using Marten.Pagination;
+global using Mapster;
