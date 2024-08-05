@@ -1,4 +1,6 @@
 using BuildingBlocks.Exceptions.Handler;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,21 +12,37 @@ builder.Services.AddMediatR(conf =>
     conf.AddOpenBehavior(typeof(LoggingBehavior<,>));
 });
 
-var connectionString = builder.Configuration.GetConnectionString("Database")!;
+var connectionStringPostsGres = builder.Configuration.GetConnectionString("Database")!;
+var connectionStringRedis = builder.Configuration.GetConnectionString("Redis")!;
 
 builder.Services.AddMarten(opts =>
 {
-    opts.Connection(connectionString);
+    opts.Connection(connectionStringPostsGres);
     opts.Schema.For<ShoppingCart>().Identity(x => x.UserName);
 }).UseLightweightSessions();
 
 builder.Services.AddScoped<IBasketRespository, BasketRepository>();
-builder.Services.AddExceptionHandler<CustomExceptionHandler>(); 
+builder.Services.Decorate<IBasketRespository, CachedBasketRepository>();
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = connectionStringRedis;
+});
+
+builder.Services.AddExceptionHandler<CustomExceptionHandler>();
+
+builder.Services.AddHealthChecks()
+    .AddNpgSql(connectionStringPostsGres)
+    .AddRedis(connectionStringRedis);
 
 var app = builder.Build();
 
 app.MapCarter();
 
 app.UseExceptionHandler(options => { });
+app.UseHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter=UIResponseWriter.WriteHealthCheckUIResponse
+});
 
 app.Run();
